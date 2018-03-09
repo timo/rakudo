@@ -1,13 +1,53 @@
 # XXX: should be Rational[Int, uint]
+my constant UINT64_UPPER = nqp::pow_I(2, 64, Num, Int);
 my class Rat is Cool does Rational[Int, Int] {
+    my \RatPrecBoost := (Rat.new(1,1).^mixin: my role boosted-precision {
+        has Int $.denominator;
+        method FatRat(::?CLASS:D: Real $?) {
+            FatRat.new: $.numerator, $!denominator
+        }
+        multi method perl(::?CLASS:D:) {
+            '<' ~ $.numerator ~ '/' ~ $!denominator ~ '>'
+        }
+    }).WHAT;
+
+    method new (Int $nu is copy = 0, Int $de is copy = 1) {
+        if $de == 0 {
+            nqp::p6bindattrinvres(
+              nqp::p6bindattrinvres(
+                nqp::create(Rat),Rat,'$!numerator',  nqp::decont($nu)),
+              Rat,'$!denominator',nqp::decont($de))
+        }
+        # normalize
+        else {
+            my $gcd        := nu gcd de;
+            my $numerator   = nu div $gcd;
+            my $denominator = de div $gcd;
+            if $denominator < 0 {
+                $numerator   = -$numerator;
+                $denominator = -$denominator;
+            }
+            $denominator < UINT64_UPPER
+            ??  nqp::p6bindattrinvres(
+                  nqp::p6bindattrinvres(
+                    nqp::create(Rakudo-Internals-ExtPrecRat),Rat,'$!numerator',  nqp::decont($nu)),
+                  Rat,'$!denominator',nqp::decont($de))
+            !!  nqp::p6bindattrinvres(
+                  nqp::p6bindattrinvres(
+                    nqp::create(RatPrecBoost),
+                      Rat,'$!numerator',  nqp::decont($nu)),
+                  RatPrecBoost,'$!denominator',nqp::decont($de))
+        }
+    }
+
     method Rat   (Rat:D: Real $?) { self }
     method FatRat(Rat:D: Real $?) { FatRat.new($!numerator, $!denominator); }
     multi method perl(Rat:D:) {
-        if $!denominator == 1 {
+        if $.denominator == 1 {
             $!numerator ~ '.0'
         }
         else {
-            my $d = $!denominator;
+            my $d = $.denominator;
             unless $d == 0 {
                 $d = $d div 5 while $d %% 5;
                 $d = $d div 2 while $d %% 2;
@@ -17,13 +57,11 @@ my class Rat is Cool does Rational[Int, Int] {
                 $b;
             }
             else {
-                '<' ~ $!numerator ~ '/' ~ $!denominator ~ '>'
+                '<' ~ $!numerator ~ '/' ~ $.denominator ~ '>'
             }
         }
     }
 }
-
-my constant UINT64_UPPER = nqp::pow_I(2, 64, Num, Int);
 
 my class FatRat is Cool does Rational[Int, Int] {
     method FatRat(FatRat:D: Real $?) { self }

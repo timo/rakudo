@@ -14,7 +14,7 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
             ),
             nqp::concat(
               nqp::tostr_I($!numerator),
-              nqp::concat('/', nqp::tostr_I($!denominator))
+              nqp::concat('/', nqp::tostr_I($.denominator))
             )
           ),
           ValueObjAt
@@ -46,29 +46,29 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
         $new
     }
 
-    method nude() { self.REDUCE-ME; $!numerator, $!denominator }
+    method nude() { self.REDUCE-ME; $!numerator, $.denominator }
 
     method Num() {
         nqp::p6box_n(nqp::div_In(
           nqp::decont($!numerator),
-          nqp::decont($!denominator)))
+          nqp::decont($.denominator)))
     }
 
     method floor(Rational:D:) {
         $!denominator == 1
             ?? $!numerator
-            !! $!numerator div $!denominator
+            !! $!numerator div $.denominator
     }
 
     method ceiling(Rational:D:) {
         self.REDUCE-ME;
         $!denominator == 1
             ?? $!numerator
-            !! ($!numerator div $!denominator + 1)
+            !! ($!numerator div $.denominator + 1)
     }
 
     method Int() {
-        $!denominator
+        $.denominator
             ?? self.truncate
             !! fail X::Numeric::DivideByZero.new:
                    :details('when coercing Rational to Int')
@@ -81,12 +81,12 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
     method Range(::?CLASS:U:) { Range.new(-Inf, Inf) }
 
     method isNaN (--> Bool:D) {
-        nqp::p6bool(nqp::isfalse($!denominator) && nqp::isfalse($!numerator))
+        nqp::p6bool(nqp::isfalse($.denominator) && nqp::isfalse($!numerator))
     }
 
     method is-prime(--> Bool:D) {
         self.REDUCE-ME;
-        nqp::if($!denominator == 1,$!numerator.is-prime)
+        nqp::if($.denominator == 1,$!numerator.is-prime)
     }
 
     multi method Str(::?CLASS:D:) {
@@ -101,8 +101,8 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
         ) ~ $whole;
 
         if $fract {
-            my $precision = $!denominator < 100_000
-                ?? 6 !! $!denominator.Str.chars + 1;
+            my $precision = $.denominator < 100_000
+                ?? 6 !! $.denominator.Str.chars + 1;
 
             my $fract-result = '';
             while $fract and $fract-result.chars < $precision - 1 {
@@ -154,7 +154,7 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
             }
         }
         else {
-            $prec = ($!denominator < $base**6 ?? 6 !! $!denominator.log($base).ceiling + 1);
+            $prec = ($.denominator < $base**6 ?? 6 !! $.denominator.log($base).ceiling + 1);
         }
 
         my $sign  = nqp::if( nqp::islt_I($!numerator, 0), '-', '' );
@@ -213,28 +213,28 @@ my role Rational[::NuT = Int, ::DeT = ::("NuT")] does Real {
     }
 
     method succ {
-        self.new($!numerator + $!denominator, $!denominator);
+        self.new($!numerator + $.denominator, $.denominator);
     }
 
     method pred {
-        self.new($!numerator - $!denominator, $!denominator);
+        self.new($!numerator - $.denominator, $.denominator);
     }
 
     method norm() { self.REDUCE-ME; self }
 
     method narrow(::?CLASS:D:) {
         self.REDUCE-ME;
-        $!denominator == 1
+        $.denominator == 1
             ?? $!numerator
             !! self;
     }
 
     method REDUCE-ME(--> Nil) {
-        if $!denominator > 1 {
-            my $gcd = $!denominator gcd $!numerator;
+        if $.denominator > 1 {
+            my $gcd = $.denominator gcd $!numerator;
             if $gcd > 1 {
                 nqp::bindattr(self,self.WHAT,'$!numerator',  $!numerator   div $gcd);
-                nqp::bindattr(self,self.WHAT,'$!denominator',$!denominator div $gcd);
+                nqp::bindattr(self,self.WHAT,'$!denominator',$.denominator div $gcd);
             }
         }
     }
